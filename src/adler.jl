@@ -2,10 +2,11 @@ const BASE = UInt32(65521)
 const NMAX = UInt32(5552)
 
 function adler32(data, adler::UInt32=0x00000001)
+    len = length(data)
+    len == 0 && return adler
+
     sum2 = (adler >> 16) & 0xffff
     adler &= 0xffff
-
-    len = length(data)
 
     if len == 1
         @inbounds adler += data[1]
@@ -18,8 +19,6 @@ function adler32(data, adler::UInt32=0x00000001)
         end
         return adler | (sum2 << 16) % UInt32
     end
-
-    len == 0 && return UInt32(1)
 
     if len < 16
         i = 1
