@@ -1,190 +1,84 @@
-# Following Nakassis 1988, https://doi.org/10.1145/53644.53648
+# Unoptimized generic function
 
-function _fletcher(data, val::T, base::C, nmax::C) where {T<:Unsigned,C<:Unsigned}
-    @assert sizeof(C) >= sizeof(T)
-
+function fletcher(C::Type{T}, data, init::T = zero(C), modulo::T = typemax(C) >> (sizeof(C)*4)) where {T<:Unsigned}
     len = length(data)
-    # optimize for nothing
-    len == 0 && return val
+    len == 0 && return init
 
-    halfwidth = sizeof(T)*4
-    halfmask = typemax(T)>>halfwidth
-    c1 = C(val >> halfwidth)
-    val &= halfmask
+    c1 = (init >> (sizeof(T)*4)) % T
+    c0 = (typemax(T) >> (sizeof(T)*4)) % T
 
-    # optimize for single element
-    if len == 1
-        @inbounds val += data[1]
-        if val > base
-            val -= base
-        end
-        c1 += val
-        if c1 > base
-            c1 -= base
-        end
-        return val | (c1 << halfwidth) % T
-    end
-
-    # guaranteed to not overflow
     i = 1
-    while len > base
-        len -= base
-        n = base
-        @inbounds while n > 0
-            val += data[i] % T
-            c1 += val
-            i += 1
-            n -= 1
-        end
-        val %= nmax
-        c1 %= nmax
+    @inbounds while len > 0
+        c0 += data[i] % T
+        c0 %= modulo
+        c1 += c0
+        c1 %= modulo
+        i += 1
+        len -= 1
     end
 
-    # also guaranteed to not overflow
-    if len > 0
-        @inbounds while len > 0
-            len -= 1
-            val += data[i] % T
-            c1 += val
-            i += 1
-        end
-        val %= nmax
-        c1 %= nmax
-    end
-    return val | (c1 << halfwidth) % T
+    T(c0 | (c1 << (sizeof(T)*4)))
 end
 
-_fletcher16(data, val::UInt16=zero(UInt16)) = _fletcher(data, val, UInt16(5802), UInt16(0xff))
-_fletcher32(data, val::UInt32=zero(UInt32)) = _fletcher(data, val, UInt64(23726746), UInt64(0xffff))
-_fletcher64(data, val::UInt64=zero(UInt64)) = _fletcher(data, val, UInt64(92681), UInt64(0xffffffff))
+# Optimized following Nakassis 1988, https://doi.org/10.1145/53644.53648
 
-const BASE16 = 5802
-const NMAX16 = UInt16(0xff)
-
-function fletcher16(data, fletcher::UInt16=0x0000)
+function _fletcher(C::Type{<:Unsigned}, data, c0::T, modulo::T, blocksize::Int) where {T<:Unsigned}
     len = length(data)
+    len == 0 && return c0 % C
 
-    c1 = UInt16((fletcher & 0xff00) >> 8)
-    c0 = UInt16(fletcher & 0x00ff)
+    c1 = T(c0 >> (sizeof(C)*4))
+    c0 %= T(typemax(C) >> (sizeof(C)*4))
 
     # one byte at a time is annoying
     if len == 1
-        @inbounds c0 += data[1]
-        c1 += c0
-        c0 %= NMAX16
-        c1 %= NMAX16
-        return (c1 << UInt16(8)) | c0
-    end
-
-    len == 0 && return UInt16(0)
-    
-    i = 1
-    while len > BASE16
-        len -= BASE16
-        n = BASE16
-        @inbounds while n > 0
-            c0 += data[i] % UInt16
-            c1 += c0
-            i += 1
-            n -= 1
+        @inbounds c0 += data[1] % T
+        if c0 > modulo
+            c0 -= modulo
         end
-        c0 %= NMAX16
-        c1 %= NMAX16
-    end
-    if len > 0
-        @inbounds while len > 0
-            len -= 1
-            c0 += data[i] % UInt16
-            c1 += c0
-            i += 1
-        end
-        c0 %= NMAX16
-        c1 %= NMAX16
-    end
-    return (c1 << UInt16(8)) | c0
-end
-
-const BASE32 = 23726746
-const NMAX32 = UInt64(0xffff)
-
-function fletcher32(data, fletcher::UInt32=0x00000000)
-    len = length(data)
-
-    c1 = UInt64((fletcher & 0xffff0000) >> 16)
-    c0 = UInt64(fletcher & 0x0000ffff)
-
-    # one byte at a time is annoying
-    if len == 1
-        c0 += data[1]
         c1 += c0
-        c0 %= NMAX32
-        c1 %= NMAX32
-        return ((c1 << UInt64(16)) | c0) % UInt32
+        if c1 > modulo
+            c1 -= modulo
+        end
+        return C(c0 | (c1 << T(sizeof(C)*4)))
     end
-
-    len == 0 && return UInt32(0)
 
     i = 1
-    while len > BASE32
-        len -= BASE32
-        n = BASE32
-        @inbounds while n > 0
-            c0 += data[i] % UInt64
-            c1 += c0
-            i += 1
-            n -= 1
-        end
-        c0 %= NMAX32
-        c1 %= NMAX32
-    end
-    if len > 0
-        @inbounds while len > 0
-            len -= 1
-            c0 += data[i] % UInt64
-            c1 += c0
-            i += 1
-        end
-        c0 %= NMAX32
-        c1 %= NMAX32
-    end
-    return ((c1 << UInt64(16)) | c0) % UInt32
-end
-
-const BASE64 = 92681
-const NMAX64 = UInt64(0xffffffff)
-
-function fletcher64(data, fletcher::UInt64=0x0000000000000000)
-    len = length(data)
-
-    c1 = UInt64((fletcher & 0xffffffff00000000) >> 32)
-    c0 = UInt64(fletcher & 0x00000000ffffffff)
-
-    # one byte at a time is annoying
-    if len == 1
-        c0 += data[1]
-        c1 += c0
-        c0 %= UInt64(0xffffffff)
-        c1 %= UInt64(0xffffffff)
-        return ((c1 << UInt64(32)) | c0) % UInt64
-    end
-
-    len == 0 && return UInt64(0)
-
-    i = 1
-    while len > 0
-        # from solving the following:
-        # n > 0
-        # n * (n+1) / 2 * (2^32 - 1) < (2^64 - 1)
-        blocksize = min(len, 92681)
+    @inbounds while len > blocksize
         len -= blocksize
-        @inbounds while blocksize > 0
-            c0 += data[i] % UInt64
+        n = blocksize
+        while n > 0
+            c0 += data[i] % T
             c1 += c0
             i += 1
-            blocksize -= 1
+            n -= 1
         end
-        c0 %= UInt64(0xffffffff)
-        c1 %= UInt64(0xffffffff)
+        c0 %= modulo
+        c1 %= modulo
     end
-    return ((c1 << UInt64(32)) | c0) % UInt64
+
+    if len > 0
+        @inbounds while len > 0
+            c0 += data[i] % T
+            c1 += c0
+            len -= 1
+            i += 1
+        end
+        c0 %= modulo
+        c1 %= modulo
+    end
+
+    return C(c0 | (c1 << T(sizeof(C)*4)))
 end
+
+# 16 and 32 cheat by using another blocksize solution to the overflow equation that fits in a 64-bit int
+fletcher16(data, init::UInt16 = zero(UInt16)) = _fletcher(UInt16, data, UInt64(init), UInt64(0xff), 380368696)
+fletcher32(data, init::UInt32 = zero(UInt32)) = _fletcher(UInt32, data, UInt64(init), UInt64(0xffff), 23726746)
+fletcher64(data, init::UInt64 = zero(UInt64)) = _fletcher(UInt64, data, init, UInt64(0xffffffff), 92681)
+
+# alternate versions use slightly different modulos (meaning slightly different block sizes as well)
+fletcher16a(data, init::UInt16 = zero(UInt16)) = _fletcher(UInt16, data, UInt64(init), UInt64(0x100), 379625061)
+fletcher32a(data, init::UInt32 = zero(UInt32)) = _fletcher(UInt32, data, UInt64(init), UInt64(0x10000), 23726565)
+fletcher64a(data, init::UInt64 = zero(UInt64)) = _fletcher(UInt64, data, init, UInt64(0x100000000), 92681)
+
+# adler32 is not optimized, but on modern hardware you barely see a difference
+adler32(data, init::UInt32 = one(UInt32)) = _fletcher(UInt32, data, init, UInt32(65521), 5552)
