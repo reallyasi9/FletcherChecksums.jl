@@ -1,7 +1,7 @@
-using FletcherChecksums
+using Checksums
 using Test
 
-@testset "FletcherChecksums.jl" begin
+@testset "Checksums.jl" begin
     # Write your tests here.
     @test fletcher16(b"abcde") == 0xC8F0
     @test fletcher16(b"abcdef") == 0x2057
