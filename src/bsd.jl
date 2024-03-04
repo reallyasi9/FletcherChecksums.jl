@@ -1,18 +1,10 @@
 # BSD checksum: bit rotate right by 1, then add
-
-function bsd(::Type{UInt16}, data, init::UInt16 = zero(UInt16))
-    len = length(data)
-    len == 0 && return init
-    c0 = UInt32(init)
-    i = 1
-    while len > 0
-        c0 = (c0 >> 1) + ((c0 & 1) << (15))
-        c0 += data[i]
-        c0 &= typemax(UInt16)
-        i += 1
-        len -= 1
+function bsd_checksum(::Type{UInt16}, data, init::UInt16 = zero(UInt16))
+    for x in data
+        init = bitrotate(init, -1) + (x % UInt16)
     end
-    return c0 % UInt16
+    return init
 end
 
-bsd16(data, init::UInt16 = zero(UInt16)) = bsd(UInt16, data, init)
+bsd_checksum(::Type{UInt16}, data::UInt8, init::UInt16 = zero(UInt16)) = bitrotate(init, -1) + (data % UInt16)
+bsd16(data, init::Integer = zero(UInt16)) = bsd_checksum(UInt16, data, UInt16(init))

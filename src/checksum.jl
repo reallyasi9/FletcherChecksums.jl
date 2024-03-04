@@ -1,4 +1,4 @@
-abstract type Checksum{T<:Unsigned} end
+abstract type AbstractChecksum{T<:Unsigned} end
 
 """
 
