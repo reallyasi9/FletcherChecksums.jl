@@ -1,107 +1,48 @@
 # Optimized following Nakassis 1988, https://doi.org/10.1145/53644.53648
 
-@inline function value(cs::FletcherChecksum{T}) where {T}
-    return ((cs.c0 & (typemax(T) >> (sizeof(T)*4))) | (cs.c1 << (sizeof(T)*4))) % T
-end
+@inline split_fletcher(value::T) where {T <: Unsigned} = (UInt64(value >> (sizeof(T)*4)), UInt64(value & (typemax(T) >> (sizeof(T) * 4))))
+@inline combine_fletcher(::Type{T}, c1::UInt64, c0::UInt64) where {T <: Unsigned} = T((c0 & (typemax(T) >> (sizeof(T)*4))) | (c1 << (sizeof(T)*4)))
 
-function fletcher(::Type{T}, init::T = zero(T), modulo::T = typemax(T), blocksize::T = one(T)) where {T <: Unsigned}
+function fletcher_checksum(::Type{T}, data, init::T = zero(T), modulo::T = typemax(T), blocksize::Integer = 1) where {T <: Unsigned}
     len = length(data)
-    len == 0 && return cs
-    len == 1 && return update(cs, data[begin])
+    len == 0 && return init
+    len == 1 && return fletcher_checksum(T, first(data), init, modulo, blocksize)
 
-    i = 1
-    c0 = cs.c0
-    c1 = cs.c1
-    @inbounds while len > cs.blocksize
-        len -= cs.blocksize
-        n = cs.blocksize
-        while n > 0
-            c0 += data[i]
+    c1, c0 = split_fletcher(init)
+
+    for block in Iterators.partition(data, blocksize)
+        for x in block
+            c0 += x % UInt64
             c1 += c0
-            i += 1
-            n -= 1
         end
-        c0 %= cs.modulo
-        c1 %= cs.modulo
+        c0 %= modulo
+        c1 %= modulo
+    end
+    return combine_fletcher(T, c1, c0)
+end
+
+function fletcher_checksum(::Type{T}, data::UInt8, init::T = zero(T), modulo::T = typemax(T), blocksize::Integer = 1) where {T <: Unsigned}
+    c1, c0 = split_fletcher(init)
+
+    c0 += data
+    if c0 >= modulo
+        c0 -= modulo
+    end
+    c1 += c0
+    if c1 >= modulo
+        c1 -= modulo
     end
 
-    if len > 0
-        @inbounds while len > 0
-            c0 += data[i]
-            c1 += c0
-            len -= 1
-            i += 1
-        end
-        c0 %= cs.modulo
-        c1 %= cs.modulo
-    end
-
-    return FletcherChecksum{T}(c0, c1, cs.modulo, cs.blocksize)
+    return combine_fletcher(T, c1, c0)
 end
 
-function update(cs::FletcherChecksum{T}, value::UInt8) where {T}
-    c0 = cs.c0 + value
-    if c0 > cs.modulo
-        c0 -= cs.modulo
-    end
-    c1 = c0 + cs.c1
-    if c1 > cs.modulo
-        c1 -= cs.modulo
-    end
-    return FletcherChecksum{T}(c0, c1, cs.modulo, cs.blocksize)
-end
+fletcher16(data, init::Integer = zero(UInt16)) = fletcher_checksum(UInt16, data, UInt16(init), 0x00ff, 380368696)
+fletcher32(data, init::Integer = zero(UInt32)) = fletcher_checksum(UInt32, data, UInt32(init), 0x0000ffff, 23726746)
+fletcher64(data, init::Integer = zero(UInt64)) = fletcher_checksum(UInt64, data, UInt64(init), 0x00000000ffffffff, 92681)
 
-function Fletcher16(init::UInt16 = zero(UInt16))
-    c1 = init >> 8
-    c0 = init & 0xff
-    return FletcherChecksum{UInt16}(c0, c1, UInt64(0xff), 380368696)
-end
+fletcher16a(data, init::Integer = zero(UInt16)) = fletcher_checksum(UInt16, data, UInt16(init), 0x0100, 379625061)
+fletcher32a(data, init::Integer = zero(UInt32)) = fletcher_checksum(UInt32, data, UInt32(init), 0x00010000, 23726565)
+fletcher64a(data, init::Integer = zero(UInt64)) = fletcher_checksum(UInt64, data, UInt64(init), 0x0000000100000000, 92681)
 
-function Fletcher32(init::UInt32 = zero(UInt32))
-    c1 = init >> 16
-    c0 = init & 0xffff
-    return FletcherChecksum{UInt32}(c0, c1, UInt64(0xffff), 23726746)
-end
-
-function Fletcher64(init::UInt64 = zero(UInt64))
-    c1 = init >> 32
-    c0 = init & 0xffffffff
-    return FletcherChecksum{UInt64}(c0, c1, UInt64(0xffffffff), 92681)
-end
-
-function Fletcher16a(init::UInt16 = zero(UInt16))
-    c1 = init >> 8
-    c0 = init & 0xff
-    return FletcherChecksum{UInt16}(c0, c1, UInt64(0x100), 379625061)
-end
-
-function Fletcher32a(init::UInt32 = zero(UInt32))
-    c1 = init >> 16
-    c0 = init & 0xffff
-    return FletcherChecksum{UInt32}(c0, c1, UInt64(0x10000), 23726565)
-end
-
-function Fletcher64a(init::UInt64 = zero(UInt64))
-    c1 = init >> 32
-    c0 = init & 0xffffffff
-    return FletcherChecksum{UInt64}(c0, c1, UInt64(0x100000000), 92681)
-end
-
-# 16 and 32 cheat by using another blocksize solution to the overflow equation that fits in a 64-bit int
-fletcher16(data, init::UInt16 = zero(UInt16)) = value(update(Fletcher16(init), data))
-fletcher32(data, init::UInt32 = zero(UInt32)) = value(update(Fletcher32(init), data))
-fletcher64(data, init::UInt64 = zero(UInt64)) = value(update(Fletcher64(init), data))
-
-# alternate versions use slightly different modulos (meaning slightly different block sizes as well)
-fletcher16a(data, init::UInt16 = zero(UInt16)) = value(update(Fletcher16a(init), data))
-fletcher32a(data, init::UInt32 = zero(UInt32)) = value(update(Fletcher32a(init), data))
-fletcher64a(data, init::UInt64 = zero(UInt64)) = value(update(Fletcher64a(init), data))
-
-# adler32 is not optimized, but on modern hardware you barely see a difference
-function Adler32(init::UInt32 = one(UInt32))
-    c1 = init >> 16
-    c0 = init & 0xffff
-    return FletcherChecksum{UInt32}(c0, c1, UInt64(65521), 5552)
-end
-
-adler32(data, init::UInt32 = one(UInt32)) = value(update(Adler32(init), data))
+# adler32 is not optimized like the zlib version, but on modern hardware the Julia version has a runtime of about 110% of the zlib version.
+adler32(data, init::Integer = one(UInt32)) = fletcher_checksum(UInt32, data, UInt32(init), UInt32(65521), 5552)
