@@ -52,6 +52,8 @@ Checksums are small summaries of data that can be used to detect errors introduc
 
 If you are building a new data transmission or storage standard and need a way to check for errors, consider using a cryptographic hash like [SHA](https://docs.julialang.org/en/v1/stdlib/SHA/), or at least a better error-detecting code like [CRC](https://github.com/JuliaIO/CRC32.jl), before choosing any of these functions.
 
+## API
+
 ```@autodocs
 Modules = [SimpleChecksums]
 ```

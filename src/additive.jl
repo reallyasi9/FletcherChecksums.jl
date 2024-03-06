@@ -18,7 +18,7 @@ This function is extremely fast but suffers from many collisions. Flaws to keep 
 
 Predefined convenience functions are `additive16`, `additive32`, and `additive64`.
 
-See also: `sysv16` for a different way of folding the sum into a fixed number of bits.
+See also: [`sysv16`](@ref) for a different way of folding the sum into a fixed number of bits.
 """
 function additive_checksum(::Type{T}, data, init::Unsigned = zero(T), modulo::T = typemax(T)) where {T <: Unsigned}
     length(data) == 0 && return init % T
@@ -31,6 +31,23 @@ end
 
 @inline additive_checksum(::Type{T}, data::Unsigned, init::Unsigned = zero(T), modulo::T = typemax(T)) where {T <: Unsigned} = ((init % T) + (data % T)) % modulo
 
+"""
+    additive16(data, [init, modulo])
+
+Alias of `additive_checksum(UInt16, data, init, modulo)`.
+"""
 additive16(data, init::Integer = zero(UInt16), modulo::Integer = typemax(UInt16)) = additive_checksum(UInt16, data, UInt16(init), UInt16(modulo))
+
+"""
+    additive32(data, [init, modulo])
+
+Alias of `additive_checksum(UInt32, data, init, modulo)`.
+"""
 additive32(data, init::Integer = zero(UInt32), modulo::Integer = typemax(UInt32)) = additive_checksum(UInt32, data, UInt32(init), UInt32(modulo))
+
+"""
+    additive64(data, [init, modulo])
+
+Alias of `additive_checksum(UInt64, data, init, modulo)`.
+"""
 additive64(data, init::Integer = zero(UInt64), modulo::Integer = typemax(UInt64)) = additive_checksum(UInt64, data, UInt64(init), UInt64(modulo))

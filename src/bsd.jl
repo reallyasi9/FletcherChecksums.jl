@@ -25,4 +25,9 @@ end
 
 @inline bsd_checksum(::Type{UInt16}, data::Unsigned, init::Unsigned = zero(UInt16)) = bsd_rotate(init % UInt16, data)
 
+"""
+    bsd16(data, [init])
+
+Alias of `bsd_checksum(UInt16, data, init)`.
+"""
 bsd16(data, init::Unsigned = zero(UInt16)) = bsd_checksum(UInt16, data, UInt16(init))

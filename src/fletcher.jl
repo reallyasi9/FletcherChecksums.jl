@@ -59,12 +59,46 @@ function fletcher_checksum(::Type{T}, data::Unsigned, init::Unsigned = zero(T), 
     return combine_fletcher(T, c1, c0)
 end
 
+"""
+    fletcher16(data, [init, modulo])
+
+Alias of `fletcher_checksum(UInt16, data, init, modulo=0x00ff, blocksize=380368696)`.
+"""
 fletcher16(data, init::Unsigned = zero(UInt16)) = fletcher_checksum(UInt16, data, UInt16(init), 0x00ff, 380368696)
+
+"""
+    fletcher32(data, [init, modulo])
+
+Alias of `fletcher_checksum(UInt32, data, init, modulo=0x0000ffff, blocksize=23726746)`.
+"""
 fletcher32(data, init::Unsigned = zero(UInt32)) = fletcher_checksum(UInt32, data, UInt32(init), 0x0000ffff, 23726746)
+
+"""
+    fletcher64(data, [init, modulo])
+
+Alias of `fletcher_checksum(UInt64, data, init, modulo=0x00000000ffffffff, blocksize=92681)`.
+"""
 fletcher64(data, init::Unsigned = zero(UInt64)) = fletcher_checksum(UInt64, data, UInt64(init), 0x00000000ffffffff, 92681)
 
+"""
+    fletcher16a(data, [init, modulo])
+
+Alias of `fletcher_checksum(UInt16, data, init, modulo=0x0100, blocksize=379625061)`.
+"""
 fletcher16a(data, init::Unsigned = zero(UInt16)) = fletcher_checksum(UInt16, data, UInt16(init), 0x0100, 379625061)
+
+"""
+    fletcher32a(data, [init, modulo])
+
+Alias of `fletcher_checksum(UInt32, data, init, modulo=0x00010000, blocksize=23726565)`.
+"""
 fletcher32a(data, init::Unsigned = zero(UInt32)) = fletcher_checksum(UInt32, data, UInt32(init), 0x00010000, 23726565)
+
+"""
+    fletcher64a(data, [init, modulo])
+
+Alias of `fletcher_checksum(UInt64, data, init, modulo=0x0000000100000000, blocksize=92681)`.
+"""
 fletcher64a(data, init::Unsigned = zero(UInt64)) = fletcher_checksum(UInt64, data, UInt64(init), 0x0000000100000000, 92681)
 
 # adler32 is not optimized like the zlib version, but on modern hardware the Julia version has a runtime of anywhere between 90% and 110% of the zlib version.
