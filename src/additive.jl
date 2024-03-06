@@ -18,7 +18,7 @@ This function is extremely fast but suffers from many collisions. Flaws to keep 
 
 Predefined convenience functions are `additive16`, `additive32`, and `additive64`.
 
-See also: [sysv16](@ref) for a different way of folding the sum into a fixed number of bits.
+See also: `sysv16` for a different way of folding the sum into a fixed number of bits.
 """
 function additive_checksum(::Type{T}, data, init::Unsigned = zero(T), modulo::T = typemax(T)) where {T <: Unsigned}
     length(data) == 0 && return init % T

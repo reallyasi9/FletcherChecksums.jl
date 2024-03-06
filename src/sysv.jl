@@ -19,7 +19,7 @@ This function is very fast but suffers from many collisions. Flaws to keep in mi
 
 Predefined convenience function is `sysv16`.
 
-See also: [additive16](@ref).
+See also: `additive16`.
 """
 function sysv_checksum(::Type{UInt16}, data, init::Unsigned = zero(UInt16))
     length(data) == 0 && return init
