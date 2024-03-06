@@ -1,14 +1,14 @@
 ```@meta
-CurrentModule = FletcherChecksums
+CurrentModule = SimpleChecksums
 ```
 
-# FletcherChecksums
+# SimpleChecksums
 
-Documentation for [FletcherChecksums](https://github.com/reallyasi9/FletcherChecksums.jl).
+Documentation for [SimpleChecksums](https://github.com/reallyasi9/SimpleChecksums.jl).
 
 ```@index
 ```
 
 ```@autodocs
-Modules = [FletcherChecksums]
+Modules = [SimpleChecksums]
 ```

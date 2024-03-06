@@ -1,14 +1,14 @@
-using FletcherChecksums
+using SimpleChecksums
 using Documenter
 
-DocMeta.setdocmeta!(FletcherChecksums, :DocTestSetup, :(using FletcherChecksums); recursive=true)
+DocMeta.setdocmeta!(SimpleChecksums, :DocTestSetup, :(using SimpleChecksums); recursive=true)
 
 makedocs(;
-    modules=[FletcherChecksums],
+    modules=[SimpleChecksums],
     authors="Phil Killewald <reallyasi9@users.noreply.github.com> and contributors",
-    sitename="FletcherChecksums.jl",
+    sitename="SimpleChecksums.jl",
     format=Documenter.HTML(;
-        canonical="https://reallyasi9.github.io/FletcherChecksums.jl",
+        canonical="https://reallyasi9.github.io/SimpleChecksums.jl",
         edit_link="development",
         assets=String[],
     ),
@@ -18,6 +18,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/reallyasi9/FletcherChecksums.jl",
+    repo="github.com/reallyasi9/SimpleChecksums.jl",
     devbranch="development",
 )
