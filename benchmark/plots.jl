@@ -1,5 +1,5 @@
 using BenchmarkTools
-using Checksums
+using SimpleChecksums
 using Random
 using CairoMakie
 import Libz
@@ -30,8 +30,10 @@ function benchmark_plot(fs)
 end
 
 function write_benchmark_plot()
-    functions = (additive16, additive32, additive64, adler32, bsd16, fletcher16, fletcher32, fletcher64, sysv16, adler32_libz)
+    functions = (additive16, additive32, additive64, sysv16, bsd16, fletcher16, fletcher32, fletcher64, adler32, adler32_libz)
     fig = benchmark_plot(functions)
     save("benchmarks.svg", fig)
     fig
 end
+
+write_benchmark_plot()

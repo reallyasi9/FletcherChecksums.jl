@@ -44,5 +44,5 @@ fletcher16a(data, init::Integer = zero(UInt16)) = fletcher_checksum(UInt16, data
 fletcher32a(data, init::Integer = zero(UInt32)) = fletcher_checksum(UInt32, data, UInt32(init), 0x00010000, 23726565)
 fletcher64a(data, init::Integer = zero(UInt64)) = fletcher_checksum(UInt64, data, UInt64(init), 0x0000000100000000, 92681)
 
-# adler32 is not optimized like the zlib version, but on modern hardware the Julia version has a runtime of about 110% of the zlib version.
+# adler32 is not optimized like the zlib version, but on modern hardware the Julia version has a runtime of anywhere between 90% and 110% of the zlib version.
 adler32(data, init::Integer = one(UInt32)) = fletcher_checksum(UInt32, data, UInt32(init), UInt32(65521), 5552)

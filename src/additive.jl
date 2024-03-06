@@ -12,14 +12,15 @@ Additive hash sums (with overflow) all the values in `data` modulo `modulo`, opt
 - `modulo::T = typemax(T)`: A number to use as the modulo for addition. Typical choices are `typemax(T)` (the default) or some prime number close to but less than `typemax(T)`.
 """
 function additive_checksum(::Type{T}, data, init::T = zero(T), modulo::T = typemax(T)) where {T <: Unsigned}
-    for x in data
-        init += (x % T)
-    end
+    length(data) == 0 && return init
+    length(data) == 1 && return additive_checksum(T, first(data), init, modulo)
+    
+    init += mapreduce(T, +, data)
     init %= modulo
     return init
 end
 
-additive_checksum(::Type{T}, data::UInt8, init::T = zero(T), modulo::T = typemax(T)) where {T <: Unsigned} = (init + (data % T)) % modulo
+@inline additive_checksum(::Type{T}, data::UInt8, init::T = zero(T), modulo::T = typemax(T)) where {T <: Unsigned} = (init + (data % T)) % modulo
 
 additive16(data, init::Integer = zero(UInt16), modulo::Integer = typemax(UInt16)) = additive_checksum(UInt16, data, UInt16(init), UInt16(modulo))
 additive32(data, init::Integer = zero(UInt32), modulo::Integer = typemax(UInt32)) = additive_checksum(UInt32, data, UInt32(init), UInt32(modulo))
