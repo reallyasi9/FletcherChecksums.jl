@@ -1,6 +1,6 @@
 module SimpleChecksums
 
-# https://burtleburtle.net/bob/hash/doobs.html
+using PrecompileTools
 
 export fletcher_checksum
 export fletcher16, fletcher32, fletcher64
@@ -15,5 +15,26 @@ include("fletcher.jl")
 include("bsd.jl")
 include("additive.jl")
 include("sysv.jl")
+
+@compile_workload begin
+    fletcher16(one(UInt8))
+    fletcher32(one(UInt8))
+    fletcher64(one(UInt8))
+    fletcher16(UInt8[1,2])
+    fletcher32(UInt8[1,2])
+    fletcher64(UInt8[1,2])
+
+    additive16(one(UInt8))
+    additive32(one(UInt8))
+    additive64(one(UInt8))
+    additive16(UInt8[1,2])
+    additive32(UInt8[1,2])
+    additive64(UInt8[1,2])
+
+    bsd16(one(UInt8))
+    bsd16(UInt8[1,2])
+    sysv16(one(UInt8))
+    sysv16(UInt8[1,2])
+end
 
 end
