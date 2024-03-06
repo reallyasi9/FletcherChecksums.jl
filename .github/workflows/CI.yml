@@ -68,6 +68,6 @@ jobs:
         shell: julia --project=docs --color=yes {0}
         run: |
           using Documenter: DocMeta, doctest
-          using FletcherChecksums
-          DocMeta.setdocmeta!(FletcherChecksums, :DocTestSetup, :(using FletcherChecksums); recursive=true)
-          doctest(FletcherChecksums)
+          using SimpleChecksums
+          DocMeta.setdocmeta!(SimpleChecksums, :DocTestSetup, :(using SimpleChecksums); recursive=true)
+          doctest(SimpleChecksums)
