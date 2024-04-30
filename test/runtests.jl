@@ -61,6 +61,9 @@ using Test
     # one byte at a time is the same as all at once
     ad32 = foldl((prev, val) -> SimpleChecksums.adler32(val, prev), rand100, init=0x00000001)
     @test ad32 == SimpleChecksums.adler32(rand100)
+
+    # make sure combine_fletcher works
+    @test SimpleChecksums.combine_fletcher(UInt32, 0x123456789abcdef0, 0x0fedcba987654321) == 0xdef04321
 end
 
 @testset "Additive Checksum" begin
