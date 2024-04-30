@@ -2,7 +2,7 @@
 # Optimized following Nakassis 1988, doi:10.1145/53644.53648.
 
 @inline split_fletcher(value::T) where {T <: Unsigned} = (UInt64(value >> (sizeof(T)*4)), UInt64(value & (typemax(T) >> (sizeof(T) * 4))))
-@inline combine_fletcher(::Type{T}, c1::UInt64, c0::UInt64) where {T <: Unsigned} = T((c0 & (typemax(T) >> (sizeof(T)*4))) | (c1 << (sizeof(T)*4)))
+@inline combine_fletcher(::Type{T}, c1::UInt64, c0::UInt64) where {T <: Unsigned} = T((c0 & (typemax(T) >> (sizeof(T)*4))) | (typemax(T) & (c1 << (sizeof(T)*4))))
 
 """
     fletcher_checksum(T, data, init::T = zero(T), modulo::T = typemax(T), blocksize::Integer = 1)
